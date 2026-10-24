@@ -11,15 +11,16 @@ type DynamicDuster2DProps = {
 
 export function DynamicDuster2D({
   step,
+  active,
   speed,
   boosted,
   driveMode = 'auto',
 }: DynamicDuster2DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const propsRef = useRef({ step, speed, boosted, driveMode })
+  const propsRef = useRef({ step, speed, boosted, driveMode, active })
   useEffect(() => {
-    propsRef.current = { step, speed, boosted, driveMode }
-  }, [step, speed, boosted, driveMode])
+    propsRef.current = { step, speed, boosted, driveMode, active }
+  }, [step, speed, boosted, driveMode, active])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -59,8 +60,38 @@ export function DynamicDuster2D({
       alpha: 0.2 + Math.random() * 0.6,
     }))
 
+    // Parallax skyline: three depth layers of deterministic buildings that loop seamlessly
+    const SKY_PERIOD = 1400
+    const buildSkyline = (seed: number, minW: number, maxW: number, minH: number, maxH: number) => {
+      let s = seed
+      const rnd = () => {
+        s = (s * 16807) % 2147483647
+        return s / 2147483647
+      }
+      const out: { x: number; w: number; h: number; lit: number[] }[] = []
+      let x = 0
+      while (x < SKY_PERIOD) {
+        const bw = minW + rnd() * (maxW - minW)
+        const bh = minH + rnd() * (maxH - minH)
+        const lit = Array.from({ length: 6 }, () => rnd())
+        out.push({ x, w: Math.min(bw, SKY_PERIOD - x), h: bh, lit })
+        x += bw + 4 + rnd() * 14
+      }
+      return out
+    }
+    const skyLayers = [
+      { speed: 0.06, color: 'rgba(46, 64, 90, 0.85)', b: buildSkyline(11, 40, 96, 120, 210), windows: true },
+      { speed: 0.16, color: 'rgba(22, 32, 48, 0.95)', b: buildSkyline(23, 28, 68, 70, 130), windows: true },
+    ]
+    let skyOffset = 0
+    let lampOffset = 0
+
     const render = (time: number) => {
       animId = requestAnimationFrame(render)
+      if (!propsRef.current.active) {
+        lastTime = time
+        return
+      }
 
       const dt = Math.min((time - lastTime) / 1000, 0.1)
       lastTime = time
@@ -89,10 +120,10 @@ export function DynamicDuster2D({
 
       const driveSpeedFactor = Math.max(0.4, (curSpeed / 85) * (isBoosted ? 1.35 : 1))
 
-      // Physics animation updates (calm, smooth, modern rates)
-      wheelAngle += dt * 4.2 * driveSpeedFactor
-      roadOffset = (roadOffset + dt * 105 * driveSpeedFactor) % 80
-      scanPos += dt * 0.2 * scanDir
+      // Matched to the agent telemetry cadence (~2–3× the previous cruise rates)
+      wheelAngle += dt * 7.4 * driveSpeedFactor
+      roadOffset = (roadOffset + dt * 190 * driveSpeedFactor) % 80
+      scanPos += dt * 0.62 * scanDir
       if (scanPos > 1) {
         scanPos = 1
         scanDir = -1
@@ -100,9 +131,9 @@ export function DynamicDuster2D({
         scanPos = 0
         scanDir = 1
       }
-      radarRadius = (radarRadius + dt * 0.32) % 1
-      otaWave = (otaWave + dt * 0.35) % 1
-      energyPhase = (energyPhase + dt * 0.45) % 1
+      radarRadius = (radarRadius + dt * 0.9) % 1
+      otaWave = (otaWave + dt * 0.95) % 1
+      energyPhase = (energyPhase + dt * 1.2) % 1
 
       // Chassis suspension float & pitch physics (gentle organic cruise)
       const tSec = time * 0.001
@@ -110,8 +141,68 @@ export function DynamicDuster2D({
       const floatPitch =
         Math.sin(tSec * 1.6 * driveSpeedFactor) * 0.002 + (isBoosted ? -0.008 : 0)
 
-      // --- 1. ROAD & HIGH-SPEED ASPHALT ---
+      // --- 0. ENVIRONMENT: night sky, parallax skyline, passing street lamps ---
       const roadY = h - 48
+      const accent =
+        curDriveMode === 'sport' || isBoosted ? '245, 158, 11' : curDriveMode === 'eco' ? '52, 211, 153' : '56, 189, 248'
+
+      const sky = ctx.createLinearGradient(0, 0, 0, roadY + 20)
+      sky.addColorStop(0, 'rgba(6, 9, 14, 0)')
+      sky.addColorStop(0.7, `rgba(${accent}, 0.05)`)
+      sky.addColorStop(1, `rgba(${accent}, 0.16)`)
+      ctx.fillStyle = sky
+      ctx.fillRect(0, 0, w, roadY + 20)
+
+      skyOffset += dt * 190 * driveSpeedFactor
+      lampOffset += dt * 190 * driveSpeedFactor
+      const horizonY = roadY + 14
+      for (const layer of skyLayers) {
+        const off = (skyOffset * layer.speed) % SKY_PERIOD
+        ctx.fillStyle = layer.color
+        for (const b of layer.b) {
+          const px = ((b.x - off) % SKY_PERIOD + SKY_PERIOD) % SKY_PERIOD - 120
+          if (px > w + 10 || px + b.w < -10) continue
+          ctx.fillRect(px, horizonY - b.h, b.w, b.h)
+          if (layer.windows) {
+            ctx.fillStyle = `rgba(${accent}, 0.55)`
+            for (let i = 0; i < b.lit.length; i++) {
+              if (b.lit[i] > 0.55) {
+                ctx.fillRect(px + 5 + (i % 3) * 11, horizonY - b.h + 8 + Math.floor(i / 3) * 14, 3, 3)
+              }
+            }
+            ctx.fillStyle = layer.color
+          }
+        }
+      }
+
+      const LAMP_GAP = 360
+      const lampShift = (lampOffset * 0.92) % LAMP_GAP
+      for (let x = -lampShift - LAMP_GAP; x < w + LAMP_GAP; x += LAMP_GAP) {
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.28)'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(x, roadY + 18)
+        ctx.lineTo(x, roadY - 128)
+        ctx.lineTo(x + 20, roadY - 134)
+        ctx.stroke()
+        const lamp = ctx.createRadialGradient(x + 22, roadY - 132, 0, x + 22, roadY - 132, 44)
+        lamp.addColorStop(0, 'rgba(255, 244, 214, 0.55)')
+        lamp.addColorStop(1, 'rgba(255, 244, 214, 0)')
+        ctx.fillStyle = lamp
+        ctx.fillRect(x - 24, roadY - 178, 92, 92)
+        const pool = ctx.createLinearGradient(x + 22, roadY - 130, x + 22, roadY + 20)
+        pool.addColorStop(0, 'rgba(255, 244, 214, 0.1)')
+        pool.addColorStop(1, 'rgba(255, 244, 214, 0)')
+        ctx.fillStyle = pool
+        ctx.beginPath()
+        ctx.moveTo(x + 20, roadY - 130)
+        ctx.lineTo(x - 22, roadY + 20)
+        ctx.lineTo(x + 66, roadY + 20)
+        ctx.closePath()
+        ctx.fill()
+      }
+
+      // --- 1. ROAD & HIGH-SPEED ASPHALT ---
 
       // Background ambient highway glow
       const roadGrad = ctx.createLinearGradient(0, roadY - 50, 0, h)
@@ -145,8 +236,8 @@ export function DynamicDuster2D({
         curDriveMode === 'eco'
           ? 'rgba(56, 211, 159, 0.28)'
           : isBoosted
-          ? 'rgba(245, 158, 11, 0.35)'
-          : 'rgba(56, 211, 159, 0.2)'
+            ? 'rgba(245, 158, 11, 0.35)'
+            : 'rgba(56, 211, 159, 0.2)'
       ctx.strokeStyle = blurColor
       ctx.lineWidth = 1
       ctx.beginPath()
@@ -155,6 +246,12 @@ export function DynamicDuster2D({
         ctx.lineTo(x + 58, roadY + 34)
       }
       ctx.stroke()
+
+      // Shoulder ticks so ground speed reads immediately
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.14)'
+      for (let x = -((roadOffset * 1.6) % 56); x < w + 56; x += 56) {
+        ctx.fillRect(x, roadY + 40, 10, 2)
+      }
 
       // Soft vehicle contact shadow
       ctx.save()
@@ -175,32 +272,50 @@ export function DynamicDuster2D({
       ctx.fill()
       ctx.restore()
 
-      // --- 2. AERODYNAMIC AIRFLOW STREAMLINES ---
+      // Underglow bleeding onto the asphalt, tinted by drive mode
+      const glowX = w * 0.46
+      const glow = ctx.createRadialGradient(glowX, roadY + 22, 10, glowX, roadY + 22, 230)
+      glow.addColorStop(0, `rgba(${accent}, ${isBoosted ? 0.4 : 0.26})`)
+      glow.addColorStop(1, `rgba(${accent}, 0)`)
+      ctx.save()
+      ctx.translate(glowX, roadY + 22)
+      ctx.scale(1, 0.1)
+      ctx.translate(-glowX, -(roadY + 22))
+      ctx.fillStyle = glow
+      ctx.beginPath()
+      ctx.arc(glowX, roadY + 22, 230, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
+
+      // --- 2. AERODYNAMIC AIRFLOW STREAMLINES (flat alpha strokes, no per-line gradients) ---
+      const strColor = isBoosted ? '245, 158, 11' : '56, 211, 159'
       for (const st of streams) {
-        st.x -= dt * 130 * st.speed * driveSpeedFactor
+        st.x -= dt * 230 * st.speed * driveSpeedFactor
         if (st.x < -80) {
           st.x = w + 40 + Math.random() * 100
           st.y = 40 + Math.random() * 165
         }
-
-        const strGrad = ctx.createLinearGradient(st.x, st.y, st.x + st.len, st.y)
-        const strColor = isBoosted ? '245, 158, 11' : curDriveMode === 'eco' ? '56, 211, 159' : '56, 211, 159'
-        strGrad.addColorStop(0, `rgba(${strColor}, 0)`)
-        strGrad.addColorStop(0.5, `rgba(${strColor}, ${st.alpha * 0.65})`)
-        strGrad.addColorStop(1, `rgba(${strColor}, ${st.alpha})`)
-
-        ctx.strokeStyle = strGrad
+        const stretch = st.len * (isBoosted ? 1.6 : 1)
+        ctx.strokeStyle = `rgba(${strColor}, ${st.alpha * 0.28})`
         ctx.lineWidth = st.thickness
         ctx.beginPath()
         ctx.moveTo(st.x, st.y)
-        ctx.lineTo(st.x + st.len, st.y)
+        ctx.lineTo(st.x + stretch, st.y)
+        ctx.stroke()
+        ctx.strokeStyle = `rgba(${strColor}, ${st.alpha})`
+        ctx.beginPath()
+        ctx.moveTo(st.x + stretch * 0.55, st.y)
+        ctx.lineTo(st.x + stretch, st.y)
         ctx.stroke()
       }
 
       // --- 3. CAR CONTAINER WITH SUSPENSION DYNAMICS ---
       ctx.save()
-      const carScale = Math.min(1.02, Math.max(0.68, w / 660))
-      const carCenterX = w * 0.46
+      const isNarrow = w < 580
+      const carScale = isNarrow
+        ? Math.min(0.7, Math.max(0.36, (w - 24) / 600))
+        : Math.min(1.02, Math.max(0.65, w / 660))
+      const carCenterX = isNarrow ? w * 0.42 : w * 0.46
       const carBaseY = roadY + 20 + floatY
 
       ctx.translate(carCenterX, carBaseY)
@@ -307,6 +422,23 @@ export function DynamicDuster2D({
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
       ctx.lineWidth = 1.6
       ctx.stroke()
+
+      // Moving paint glint sweeping across the roof/shoulder
+      const glintX = -150 + ((time * 0.06) % 520) * 0.6
+      if (glintX < 60) {
+        const glint = ctx.createLinearGradient(glintX - 20, 0, glintX + 26, 0)
+        glint.addColorStop(0, 'rgba(255, 255, 255, 0)')
+        glint.addColorStop(0.5, 'rgba(255, 255, 255, 0.16)')
+        glint.addColorStop(1, 'rgba(255, 255, 255, 0)')
+        ctx.fillStyle = glint
+        ctx.beginPath()
+        ctx.moveTo(glintX, -141)
+        ctx.lineTo(glintX + 28, -141)
+        ctx.lineTo(glintX + 4, -84)
+        ctx.lineTo(glintX - 24, -84)
+        ctx.closePath()
+        ctx.fill()
+      }
 
       // Body accent swage lines (Chiseled Duster creases)
       ctx.strokeStyle = 'rgba(245, 158, 11, 0.55)'
@@ -424,21 +556,38 @@ export function DynamicDuster2D({
       // STEP 1: VEHICLE PLATFORM & CRUISE
       if (curStep === 'duster') {
         ctx.save()
-        // Powertrain energy distribution line (calm, subtle pulse)
-        ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)'
+        const rail = [
+          { x: 180, y: -50 },
+          { x: -40, y: -32 },
+          { x: -135, y: -34 },
+        ]
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.75)'
         ctx.lineWidth = 2
         ctx.setLineDash([6, 4])
-        ctx.lineDashOffset = -time * 0.02
+        ctx.lineDashOffset = -time * 0.055
         ctx.beginPath()
-        ctx.moveTo(180, -50) // Front motor
-        ctx.lineTo(-40, -32) // Battery pack
-        ctx.lineTo(-135, -34) // Rear e-axle
+        ctx.moveTo(rail[0].x, rail[0].y)
+        ctx.lineTo(rail[1].x, rail[1].y)
+        ctx.lineTo(rail[2].x, rail[2].y)
         ctx.stroke()
         ctx.setLineDash([])
 
-        // Cabin IVI pulse beacon
-        const beaconPulse = 0.5 + Math.sin(time * 0.0025) * 0.5
-        ctx.fillStyle = `rgba(56, 211, 159, ${beaconPulse * 0.25})`
+        for (let i = 0; i < 3; i++) {
+          const t = (energyPhase + i / 3) % 1
+          const seg = t < 0.55 ? 0 : 1
+          const local = seg === 0 ? t / 0.55 : (t - 0.55) / 0.45
+          const a = rail[seg]
+          const b = rail[seg + 1]
+          const px = a.x + (b.x - a.x) * local
+          const py = a.y + (b.y - a.y) * local
+          ctx.fillStyle = i % 2 === 0 ? '#f59e0b' : '#38d39f'
+          ctx.beginPath()
+          ctx.arc(px, py, 3.2, 0, Math.PI * 2)
+          ctx.fill()
+        }
+
+        const beaconPulse = 0.5 + Math.sin(time * 0.007) * 0.5
+        ctx.fillStyle = `rgba(56, 211, 159, ${beaconPulse * 0.28})`
         ctx.beginPath()
         ctx.arc(30, -90, 16, 0, Math.PI * 2)
         ctx.fill()
@@ -446,9 +595,11 @@ export function DynamicDuster2D({
         ctx.beginPath()
         ctx.arc(30, -90, 3.5, 0, Math.PI * 2)
         ctx.fill()
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.88)'
         ctx.font = '8px "IBM Plex Mono", monospace'
         ctx.fillText('DIGITAL COCKPIT 10.1"', 42, -92)
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.9)'
+        ctx.fillText(`${curSpeed} KM/H · 5G LIVE`, 42, -80)
         ctx.restore()
       }
 
@@ -456,7 +607,6 @@ export function DynamicDuster2D({
       if (curStep === 'diag') {
         const scanX = -210 + scanPos * 430
         ctx.save()
-        // Vertical scanning laser beam
         const laserGrad = ctx.createLinearGradient(scanX, -150, scanX, -10)
         laserGrad.addColorStop(0, 'rgba(56, 211, 159, 0)')
         laserGrad.addColorStop(0.5, 'rgba(56, 211, 159, 0.95)')
@@ -468,47 +618,44 @@ export function DynamicDuster2D({
         ctx.lineTo(scanX, -10)
         ctx.stroke()
 
-        // Scanning laser glow ripple
-        ctx.fillStyle = 'rgba(56, 211, 159, 0.07)'
-        ctx.fillRect(scanX - 16, -150, 32, 140)
+        ctx.fillStyle = 'rgba(56, 211, 159, 0.08)'
+        ctx.fillRect(scanX - 18, -150, 36, 140)
+        ctx.fillStyle = 'rgba(56, 211, 159, 0.05)'
+        ctx.fillRect(-210, -150, scanX + 210, 140)
 
-        // Internal CAN Bus wiring harness
         ctx.strokeStyle = 'rgba(56, 211, 159, 0.7)'
         ctx.lineWidth = 1.4
         ctx.setLineDash([4, 4])
-        ctx.lineDashOffset = -time * 0.015
+        ctx.lineDashOffset = -time * 0.05
         ctx.beginPath()
-        ctx.moveTo(180, -60) // Engine ECU
-        ctx.lineTo(30, -70) // Central IVI
-        ctx.lineTo(-60, -35) // Battery BMS
-        ctx.lineTo(-190, -60) // Rear telematics
+        ctx.moveTo(180, -60)
+        ctx.lineTo(30, -70)
+        ctx.lineTo(-60, -35)
+        ctx.lineTo(-190, -60)
         ctx.stroke()
         ctx.setLineDash([])
 
-        // Animated CAN data packets moving calmly along backbone
-        const packetPhase = (time * 0.0006) % 1
         const canPoints = [
           { x: 180, y: -60 },
           { x: 30, y: -70 },
           { x: -60, y: -35 },
           { x: -190, y: -60 },
         ]
-        const segIdx = Math.floor(packetPhase * 3)
-        const segT = (packetPhase * 3) % 1
-        const p1 = canPoints[segIdx]
-        const p2 = canPoints[segIdx + 1]
-        const pX = p1.x + (p2.x - p1.x) * segT
-        const pY = p1.y + (p2.y - p1.y) * segT
+        const packetOffsets = [0, 0.38, 0.72]
+        for (let i = 0; i < packetOffsets.length; i++) {
+          const packetPhase = (time * 0.0017 + packetOffsets[i]) % 1
+          const segIdx = Math.min(2, Math.floor(packetPhase * 3))
+          const segT = (packetPhase * 3) % 1
+          const a = canPoints[segIdx]
+          const b = canPoints[segIdx + 1]
+          const pX = a.x + (b.x - a.x) * segT
+          const pY = a.y + (b.y - a.y) * segT
+          ctx.fillStyle = i === 1 ? '#38d39f' : '#f59e0b'
+          ctx.beginPath()
+          ctx.arc(pX, pY, 3.4, 0, Math.PI * 2)
+          ctx.fill()
+        }
 
-        ctx.fillStyle = '#f59e0b'
-        ctx.shadowColor = '#f59e0b'
-        ctx.shadowBlur = 8
-        ctx.beginPath()
-        ctx.arc(pX, pY, 3.8, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.shadowBlur = 0
-
-        // Glowing ECU nodes
         const nodes = [
           { x: 180, y: -60, label: 'ECU_POWERTRAIN' },
           { x: 30, y: -70, label: 'IVI_GATEWAY' },
@@ -516,23 +663,25 @@ export function DynamicDuster2D({
           { x: -190, y: -60, label: 'CAN_TERMINATOR' },
         ]
         for (const n of nodes) {
-          ctx.fillStyle = '#38d39f'
+          const hot = Math.abs(scanX - n.x) < 22
+          ctx.fillStyle = hot ? '#f59e0b' : '#38d39f'
           ctx.beginPath()
-          ctx.arc(n.x, n.y, 4, 0, Math.PI * 2)
+          ctx.arc(n.x, n.y, hot ? 5 : 4, 0, Math.PI * 2)
           ctx.fill()
           ctx.strokeStyle = '#fff'
           ctx.lineWidth = 1.2
           ctx.stroke()
-
           ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
           ctx.font = '8px "IBM Plex Mono", monospace'
           ctx.fillText(n.label, n.x - 24, n.y - 8)
         }
+
+        ctx.fillStyle = 'rgba(56, 211, 159, 0.9)'
+        ctx.font = '8px "IBM Plex Mono", monospace'
+        ctx.fillText(`UDS SCAN  ${Math.round(scanPos * 100)}%`, scanX - 28, -156)
         ctx.restore()
       }
 
-      // STEP 3: CLOUD CONFIG HUB (SETTINGS ➔ CLOUD ➔ CONFIG HUB)
-      // STEP 3: CLOUD CONFIG HUB (SETTINGS ➔ CLOUD ➔ CONFIG HUB)
       if (curStep === 'config') {
         ctx.save()
 
@@ -640,7 +789,7 @@ export function DynamicDuster2D({
         ctx.strokeStyle = 'rgba(245, 158, 11, 0.55)'
         ctx.lineWidth = 1.4
         ctx.setLineDash([4, 4])
-        ctx.lineDashOffset = -time * 0.015
+        ctx.lineDashOffset = -time * 0.05
         ctx.beginPath()
         ctx.moveTo(setX, setY)
         ctx.quadraticCurveTo(setX - 10, -150, cloudX - 28, cloudY + 10)
@@ -655,38 +804,33 @@ export function DynamicDuster2D({
         ctx.setLineDash([])
         ctx.restore()
 
-        // 5. Calm Data Packets traveling along bezier curves
-        // Packet 1: Settings -> Cloud (Slow, gentle ~3.5s per cycle)
-        const tUp = (time * 0.00035) % 1
-        const invTUp = 1 - tUp
-        const p1x = invTUp * invTUp * setX + 2 * invTUp * tUp * (setX - 10) + tUp * tUp * (cloudX - 28)
-        const p1y = invTUp * invTUp * setY + 2 * invTUp * tUp * -150 + tUp * tUp * (cloudY + 10)
-
-        ctx.fillStyle = '#f59e0b'
-        ctx.shadowColor = '#f59e0b'
-        ctx.shadowBlur = 8
+        const cloudPulse = 18 + otaWave * 28
+        ctx.strokeStyle = `rgba(96, 165, 250, ${0.45 - otaWave * 0.35})`
+        ctx.lineWidth = 1.4
         ctx.beginPath()
-        ctx.arc(p1x, p1y, 3.8, 0, Math.PI * 2)
-        ctx.fill()
+        ctx.arc(cloudX, cloudY - 12, cloudPulse, 0, Math.PI * 2)
+        ctx.stroke()
 
-        // Packet 2: Cloud -> Config Hub (Out-of-phase by 0.5)
-        const tDown = (time * 0.00035 + 0.5) % 1
-        const invTDown = 1 - tDown
-        const p2x = invTDown * invTDown * (cloudX + 22) + 2 * invTDown * tDown * (hubX + 10) + tDown * tDown * hubX
-        const p2y = invTDown * invTDown * (cloudY + 10) + 2 * invTDown * tDown * -145 + tDown * tDown * hubY
+        const drawBezPacket = (t: number, ax: number, ay: number, cx: number, cy: number, bx: number, by: number, color: string) => {
+          const inv = 1 - t
+          const px = inv * inv * ax + 2 * inv * t * cx + t * t * bx
+          const py = inv * inv * ay + 2 * inv * t * cy + t * t * by
+          ctx.fillStyle = color
+          ctx.beginPath()
+          ctx.arc(px, py, 3.6, 0, Math.PI * 2)
+          ctx.fill()
+        }
 
-        ctx.fillStyle = '#38d39f'
-        ctx.shadowColor = '#38d39f'
-        ctx.shadowBlur = 8
-        ctx.beginPath()
-        ctx.arc(p2x, p2y, 3.8, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.shadowBlur = 0
+        drawBezPacket((time * 0.00095) % 1, setX, setY, setX - 10, -150, cloudX - 28, cloudY + 10, '#f59e0b')
+        drawBezPacket((time * 0.00095 + 0.5) % 1, setX, setY, setX - 10, -150, cloudX - 28, cloudY + 10, '#fbbf24')
+        drawBezPacket((time * 0.00095 + 0.18) % 1, cloudX + 22, cloudY + 10, hubX + 10, -145, hubX, hubY, '#38d39f')
+        drawBezPacket((time * 0.00095 + 0.68) % 1, cloudX + 22, cloudY + 10, hubX + 10, -145, hubX, hubY, '#6ee7b7')
 
-        // Subtitle status
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)'
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.78)'
         ctx.font = '8px "IBM Plex Mono", monospace'
         ctx.fillText('SYNC: SETTINGS ➔ CLOUD ➔ CONFIG HUB', -90, -145)
+        ctx.fillStyle = '#60a5fa'
+        ctx.fillText('PUSH / ACK  4.2KB', 78, -168)
 
         ctx.restore()
       }
@@ -699,48 +843,80 @@ export function DynamicDuster2D({
         const radarX = 236
         const radarY = -50
 
-        // Forward LiDAR / Radar sonar pulses
-        for (let i = 0; i < 3; i++) {
-          const rad = ((radarRadius + i * 0.33) % 1) * 165
-          const alpha = 1 - rad / 165
-          ctx.strokeStyle = `rgba(56, 211, 159, ${alpha * 0.8})`
+        for (let i = 0; i < 4; i++) {
+          const rad = 28 + ((radarRadius + i * 0.25) % 1) * 95
+          const alpha = 1 - (rad - 28) / 95
+          ctx.strokeStyle = `rgba(56, 211, 159, ${alpha * 0.82})`
           ctx.lineWidth = 2
           ctx.beginPath()
-          ctx.arc(radarX, radarY, rad, -Math.PI * 0.22, Math.PI * 0.22)
+          ctx.arc(radarX, radarY, rad, -Math.PI * 0.28, Math.PI * 0.28)
           ctx.stroke()
         }
 
-        // Camera vision cone from windshield
-        const camGrad = ctx.createLinearGradient(camX, camY, camX + 220, camY)
+        ctx.strokeStyle = 'rgba(96, 165, 250, 0.4)'
+        ctx.lineWidth = 1
+        ctx.setLineDash([5, 7])
+        ctx.lineDashOffset = -time * 0.06
+        ctx.beginPath()
+        ctx.moveTo(150, -22)
+        ctx.lineTo(318, 4)
+        ctx.moveTo(150, -78)
+        ctx.lineTo(318, -98)
+        ctx.stroke()
+        ctx.setLineDash([])
+
+        const camGrad = ctx.createLinearGradient(camX, camY, camX + 150, camY)
         camGrad.addColorStop(0, 'rgba(96, 165, 250, 0.42)')
         camGrad.addColorStop(1, 'rgba(96, 165, 250, 0)')
         ctx.fillStyle = camGrad
         ctx.beginPath()
         ctx.moveTo(camX, camY)
-        ctx.lineTo(camX + 245, camY - 55)
-        ctx.lineTo(camX + 245, camY + 65)
+        ctx.lineTo(camX + 160, camY - 38)
+        ctx.lineTo(camX + 160, camY + 46)
         ctx.closePath()
         ctx.fill()
 
-        // Detected lead vehicle target box
-        const targetX = 350
-        const targetY = -42
+        ctx.fillStyle = '#60a5fa'
+        ctx.font = '7.5px "IBM Plex Mono", monospace'
+        ctx.fillText('CAM', camX - 4, camY - 8)
+        ctx.fillStyle = '#38d39f'
+        ctx.fillText('RADAR', radarX - 18, radarY + 18)
+
+        const leadBob = Math.sin(time * 0.004) * 3
+        const targetX = 250 + leadBob
+        const targetY = -52
         ctx.strokeStyle = '#f59e0b'
         ctx.lineWidth = 1.8
-        ctx.strokeRect(targetX - 18, targetY - 16, 36, 30)
-        // Corner brackets
+        ctx.strokeRect(targetX - 14, targetY - 12, 28, 22)
         ctx.fillStyle = '#f59e0b'
-        ctx.font = '8.5px "IBM Plex Mono", monospace'
-        ctx.fillText('LEAD: 34.2m', targetX - 26, targetY - 20)
-        ctx.fillText('TTC: 3.2s', targetX - 22, targetY + 26)
+        ctx.font = '7.5px "IBM Plex Mono", monospace'
+        ctx.fillText('LEAD', targetX - 10, targetY - 16)
+
+        ctx.fillStyle = 'rgba(8, 12, 16, 0.72)'
+        ctx.fillRect(-8, -132, 92, 28)
+        ctx.strokeStyle = 'rgba(56, 211, 159, 0.45)'
+        ctx.lineWidth = 1
+        ctx.strokeRect(-8, -132, 92, 28)
+        ctx.fillStyle = '#38d39f'
+        ctx.font = '7.5px "IBM Plex Mono", monospace'
+        ctx.fillText('LEAD  34.2 m', -2, -120)
+        ctx.fillStyle = '#f59e0b'
+        ctx.fillText('TTC   3.2 s', -2, -109)
+
+        const sideX = 210
+        const sideY = 6
+        ctx.strokeStyle = 'rgba(96, 165, 250, 0.85)'
+        ctx.strokeRect(sideX - 11, sideY - 9, 22, 16)
+        ctx.fillStyle = 'rgba(96, 165, 250, 0.9)'
+        ctx.font = '7.5px "IBM Plex Mono", monospace'
+        ctx.fillText('LANE 12.4m', sideX - 22, sideY + 20)
         ctx.restore()
       }
 
       // STEP 5: PERFORMANCE ENERGY REGENERATION GLOW
       if (curStep === 'android') {
         ctx.save()
-        // Regenerative braking energy halo around wheels
-        const regenAlpha = 0.45 + Math.sin(time * 0.008) * 0.35
+        const regenAlpha = 0.45 + Math.sin(time * 0.018) * 0.35
         ctx.strokeStyle = `rgba(56, 211, 159, ${regenAlpha})`
         ctx.lineWidth = 3
         ctx.beginPath()
@@ -750,27 +926,36 @@ export function DynamicDuster2D({
         ctx.arc(WHEEL_REAR_X, WHEEL_Y, WHEEL_RADIUS + 7, 0, Math.PI * 2)
         ctx.stroke()
 
-        // Energy flow particles towards battery
         const pCount = 5
         for (let i = 0; i < pCount; i++) {
           const pT = (energyPhase + i / pCount) % 1
-          const ex = WHEEL_FRONT_X + (-40 - WHEEL_FRONT_X) * pT
-          const ey = WHEEL_Y + (-34 - WHEEL_Y) * pT
+          const fx = WHEEL_FRONT_X + (-40 - WHEEL_FRONT_X) * pT
+          const fy = WHEEL_Y + (-34 - WHEEL_Y) * pT
+          const rx = WHEEL_REAR_X + (-40 - WHEEL_REAR_X) * pT
+          const ry = WHEEL_Y + (-34 - WHEEL_Y) * pT
           ctx.fillStyle = '#38d39f'
           ctx.beginPath()
-          ctx.arc(ex, ey, 2.5, 0, Math.PI * 2)
+          ctx.arc(fx, fy, 2.5, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.fillStyle = '#f59e0b'
+          ctx.beginPath()
+          ctx.arc(rx, ry, 2.3, 0, Math.PI * 2)
           ctx.fill()
         }
 
-        // Battery Pack under floor
-        ctx.fillStyle = 'rgba(56, 211, 159, 0.25)'
+        const soc = 0.55 + Math.sin(time * 0.003) * 0.12
+        ctx.fillStyle = 'rgba(12, 16, 20, 0.85)'
         ctx.fillRect(-70, -32, 90, 8)
+        ctx.fillStyle = 'rgba(56, 211, 159, 0.85)'
+        ctx.fillRect(-70, -32, 90 * soc, 8)
         ctx.strokeStyle = '#38d39f'
         ctx.lineWidth = 1
         ctx.strokeRect(-70, -32, 90, 8)
         ctx.fillStyle = '#38d39f'
         ctx.font = '7.5px "IBM Plex Mono", monospace'
         ctx.fillText('48V HYBRID TRACTION BATTERY', -68, -36)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
+        ctx.fillText(`${Math.round(soc * 100)}% SOC  ·  REGEN ${isBoosted ? 'OFF' : 'ON'}`, -68, -20)
         ctx.restore()
       }
 
@@ -856,11 +1041,11 @@ export function DynamicDuster2D({
 
       {/* Dynamic Mode HUD Callout Watermark */}
       <div className="mode-watermark">
-        {step === 'duster' && <span>01 · CONNECTED DRIVE & TELEMETRY</span>}
-        {step === 'diag' && <span>02 · X-RAY DIAGNOSTICS SCANNER [LIVE CAN BUS]</span>}
-        {step === 'config' && <span>03 · CLOUD CONFIG HUB [SETTINGS ⇄ CLOUD ⇄ GATEWAY]</span>}
-        {step === 'adas' && <span>04 · ADAS COMPUTER VISION [RUST/OPENCV 60FPS]</span>}
-        {step === 'android' && <span>05 · ARCHITECTURE & ZERO-JANK 60FPS</span>}
+        {step === 'duster' && <span>CONNECTED DRIVE & TELEMETRY</span>}
+        {step === 'diag' && <span>X-RAY DIAGNOSTICS SCANNER [LIVE CAN BUS]</span>}
+        {step === 'config' && <span>CLOUD CONFIG HUB [SETTINGS ⇄ CLOUD ⇄ GATEWAY]</span>}
+        {step === 'adas' && <span>ADAS COMPUTER VISION [RUST/OPENCV 60FPS]</span>}
+        {step === 'android' && <span>ARCHITECTURE & ZERO-JANK 60FPS</span>}
       </div>
     </div>
   )

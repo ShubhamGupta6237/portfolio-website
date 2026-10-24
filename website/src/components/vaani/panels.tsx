@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { VaaniStepId } from '../../data/profile'
 import { useInterval } from '../../hooks/useInterval'
 
@@ -359,7 +359,7 @@ const hubs = ['VoicePipeline', 'AgentServer', 'AsyncToolExecutor', 'AssemblyAiSt
 
 function GraphPanel() {
   const ref = useRef<HTMLCanvasElement>(null)
-  const seed = useMemo(() => Math.random(), [])
+  const [seed] = useState(() => Math.random())
 
   useEffect(() => {
     const canvas = ref.current

@@ -13,13 +13,25 @@ const VoiceTelemetry = lazy(() => import('./VoiceTelemetry').then((m) => ({ defa
 
 export function VaaniSection() {
   const storyRef = useRef<HTMLDivElement>(null)
-  const { step, inView } = useScrollSteps(storyRef, vaaniSteps.length)
+  const { step, setStep, inView } = useScrollSteps(storyRef, vaaniSteps.length)
   const { state, node, messages, ampRef } = useCallSimulation(inView)
   const transcriptRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     transcriptRef.current?.scrollTo({ top: transcriptRef.current.scrollHeight })
   }, [messages])
+
+  const handleSelectStep = (index: number) => {
+    setStep(index)
+    if (window.innerWidth > 960 && storyRef.current) {
+      const rect = storyRef.current.getBoundingClientRect()
+      const scrollTop = window.scrollY || document.documentElement.scrollTop
+      const storyTop = rect.top + scrollTop
+      const storyHeight = storyRef.current.offsetHeight - window.innerHeight
+      const targetY = storyTop + (index / Math.max(1, vaaniSteps.length - 1)) * storyHeight
+      window.scrollTo({ top: targetY, behavior: 'smooth' })
+    }
+  }
 
   return (
     <section className="vaani" id="vaani">
@@ -88,7 +100,7 @@ export function VaaniSection() {
               </div>
             </div>
 
-            <StoryText steps={vaaniSteps} step={step} />
+            <StoryText steps={vaaniSteps} step={step} onSelectStep={handleSelectStep} />
           </div>
         </div>
       </div>

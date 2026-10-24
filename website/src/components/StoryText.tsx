@@ -25,20 +25,81 @@ const itemVariants: Variants = {
   exit: { opacity: 0, transition: { duration: 0.15 } },
 }
 
-export function StoryText({ steps, step }: { steps: Step[]; step: number }) {
+export function StoryText({
+  steps,
+  step,
+  onSelectStep,
+  showNav = true,
+}: {
+  steps: Step[]
+  step: number
+  onSelectStep?: (index: number) => void
+  showNav?: boolean
+}) {
   const s = steps[step]
   // Derived during render (React's sanctioned pattern) so the exiting step knows which way to leave.
   const [nav, setNav] = useState({ prev: step, dir: 1 })
   if (nav.prev !== step) setNav({ prev: step, dir: step > nav.prev ? 1 : -1 })
   const dir = nav.dir
 
+  const handlePrev = () => {
+    if (step > 0 && onSelectStep) {
+      onSelectStep(step - 1)
+    }
+  }
+
+  const handleNext = () => {
+    if (step < steps.length - 1 && onSelectStep) {
+      onSelectStep(step + 1)
+    }
+  }
+
   return (
     <div className="story-text">
-      <div className="story-dots" aria-hidden>
-        {steps.map((_, i) => (
-          <span key={i} className={i === step ? 'on' : i < step ? 'done' : ''} />
-        ))}
-      </div>
+      {showNav && (
+        <div className="story-nav-bar">
+          <div className="story-dots" aria-label="Step navigation">
+            {steps.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`story-dot-btn ${i === step ? 'on' : i < step ? 'done' : ''}`}
+                onClick={() => onSelectStep?.(i)}
+                aria-label={`Go to step ${i + 1} of ${steps.length}`}
+              />
+            ))}
+          </div>
+
+          <div className="mobile-step-stepper">
+            <span className="step-counter">
+              <span className="step-num">{String(step + 1).padStart(2, '0')}</span>
+              <span className="step-sep">/</span>
+              <span className="step-total">{String(steps.length).padStart(2, '0')}</span>
+            </span>
+            <div className="step-nav-arrows">
+              <button
+                type="button"
+                className="step-arrow-btn"
+                onClick={handlePrev}
+                disabled={step === 0}
+                aria-label="Previous step"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className="step-arrow-btn"
+                onClick={handleNext}
+                disabled={step === steps.length - 1}
+                aria-label="Next step"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="story-step-stack">
         <AnimatePresence initial={false} custom={dir}>
           <motion.div
@@ -55,7 +116,7 @@ export function StoryText({ steps, step }: { steps: Step[]; step: number }) {
             </motion.div>
             <motion.h3 variants={itemVariants}>{s.title}</motion.h3>
             <motion.p variants={itemVariants}>{s.body}</motion.p>
-            <motion.div variants={itemVariants} className="tags">
+            <motion.div variants={itemVariants} className="tags story-tags">
               {s.tags.map((t) => (
                 <span className="tag" key={t}>
                   {t}
