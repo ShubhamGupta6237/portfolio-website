@@ -1,6 +1,176 @@
 import { useEffect, useRef } from 'react'
 import type { RenaultStepId } from '../../data/profile'
 
+const WHEEL_RADIUS = 34
+const WHEEL_REAR_X = -135
+const WHEEL_FRONT_X = 135
+const WHEEL_Y = -WHEEL_RADIUS
+const BODY_PAD_X = 270
+const BODY_PAD_Y = 180
+const BODY_W = BODY_PAD_X * 2
+const BODY_H = BODY_PAD_Y + 90
+
+function paintCarBody(ctx: CanvasRenderingContext2D) {
+  ctx.save()
+  ctx.translate(BODY_PAD_X, BODY_PAD_Y)
+
+  ctx.fillStyle = '#0b0e14'
+  ctx.beginPath()
+  ctx.moveTo(-220, -22)
+  ctx.lineTo(220, -22)
+  ctx.lineTo(220, -10)
+  ctx.lineTo(-220, -10)
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.beginPath()
+  ctx.moveTo(-228, -20)
+  ctx.lineTo(-234, -48)
+  ctx.lineTo(-230, -78)
+  ctx.lineTo(-224, -92)
+  ctx.lineTo(-172, -140)
+  ctx.lineTo(-160, -143)
+  ctx.lineTo(40, -143)
+  ctx.lineTo(135, -94)
+  ctx.lineTo(175, -88)
+  ctx.lineTo(228, -78)
+  ctx.lineTo(236, -60)
+  ctx.lineTo(234, -36)
+  ctx.lineTo(224, -20)
+  ctx.lineTo(WHEEL_FRONT_X + 46, -20)
+  ctx.arc(WHEEL_FRONT_X, WHEEL_Y, WHEEL_RADIUS + 12, 0, Math.PI, true)
+  ctx.lineTo(WHEEL_FRONT_X - 46, -20)
+  ctx.lineTo(WHEEL_REAR_X + 46, -20)
+  ctx.arc(WHEEL_REAR_X, WHEEL_Y, WHEEL_RADIUS + 12, 0, Math.PI, true)
+  ctx.lineTo(WHEEL_REAR_X - 46, -20)
+  ctx.lineTo(-228, -20)
+  ctx.closePath()
+
+  const bodyGrad = ctx.createLinearGradient(0, -150, 0, -20)
+  bodyGrad.addColorStop(0, '#38423a')
+  bodyGrad.addColorStop(0.3, '#242b26')
+  bodyGrad.addColorStop(0.7, '#191e1a')
+  bodyGrad.addColorStop(1, '#0e1210')
+  ctx.fillStyle = bodyGrad
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
+  ctx.lineWidth = 1.6
+  ctx.stroke()
+
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.55)'
+  ctx.lineWidth = 1.4
+  ctx.beginPath()
+  ctx.moveTo(-160, -82)
+  ctx.lineTo(155, -82)
+  ctx.stroke()
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(-150, -42)
+  ctx.lineTo(140, -42)
+  ctx.stroke()
+
+  ctx.fillStyle = '#6b7280'
+  ctx.beginPath()
+  ctx.roundRect(210, -32, 24, 12, 3)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.roundRect(-230, -32, 22, 12, 3)
+  ctx.fill()
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
+  ctx.fillStyle = 'rgba(12, 15, 18, 0.9)'
+  ctx.lineWidth = 1.2
+  ctx.beginPath()
+  ctx.arc(WHEEL_FRONT_X, WHEEL_Y, WHEEL_RADIUS + 12, 0, Math.PI, true)
+  ctx.arc(WHEEL_FRONT_X, WHEEL_Y, WHEEL_RADIUS + 16, Math.PI, 0, false)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.arc(WHEEL_REAR_X, WHEEL_Y, WHEEL_RADIUS + 12, 0, Math.PI, true)
+  ctx.arc(WHEEL_REAR_X, WHEEL_Y, WHEEL_RADIUS + 16, Math.PI, 0, false)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.fillStyle = '#f59e0b'
+  ctx.fillRect(-125, -149, 145, 4)
+  ctx.fillRect(-115, -146, 8, 4)
+  ctx.fillRect(10, -146, 8, 4)
+
+  ctx.beginPath()
+  ctx.moveTo(-160, -92)
+  ctx.lineTo(-155, -137)
+  ctx.lineTo(34, -137)
+  ctx.lineTo(124, -92)
+  ctx.closePath()
+  const glassGrad = ctx.createLinearGradient(0, -140, 0, -90)
+  glassGrad.addColorStop(0, 'rgba(56, 211, 159, 0.32)')
+  glassGrad.addColorStop(0.4, 'rgba(16, 24, 32, 0.85)')
+  glassGrad.addColorStop(1, 'rgba(10, 14, 20, 0.96)')
+  ctx.fillStyle = glassGrad
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(56, 211, 159, 0.45)'
+  ctx.lineWidth = 1.2
+  ctx.stroke()
+
+  ctx.fillStyle = '#0a0d12'
+  ctx.fillRect(-35, -137, 10, 45)
+  ctx.fillRect(-115, -137, 8, 45)
+
+  ctx.fillStyle = '#1c221d'
+  ctx.strokeStyle = '#f59e0b'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.roundRect(108, -98, 22, 12, [3, 6, 6, 2])
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.fillStyle = '#fff'
+  ctx.shadowColor = '#38d39f'
+  ctx.shadowBlur = 12
+  ctx.fillRect(226, -72, 8, 10)
+  ctx.strokeStyle = '#38d39f'
+  ctx.lineWidth = 2.2
+  ctx.beginPath()
+  ctx.moveTo(222, -74)
+  ctx.lineTo(232, -68)
+  ctx.lineTo(222, -62)
+  ctx.stroke()
+  ctx.shadowBlur = 0
+
+  ctx.shadowColor = '#ef4444'
+  ctx.shadowBlur = 10
+  ctx.strokeStyle = '#ef4444'
+  ctx.lineWidth = 2.6
+  ctx.beginPath()
+  ctx.moveTo(-228, -78)
+  ctx.lineTo(-234, -72)
+  ctx.lineTo(-228, -66)
+  ctx.stroke()
+  ctx.shadowBlur = 0
+
+  ctx.fillStyle = '#2d352e'
+  ctx.fillRect(45, -78, 16, 4)
+  ctx.fillRect(-85, -102, 10, 12)
+
+  ctx.restore()
+}
+
+function bakeCarSprite() {
+  const dpr = 2
+  const sprite = document.createElement('canvas')
+  sprite.width = Math.ceil(BODY_W * dpr)
+  sprite.height = Math.ceil(BODY_H * dpr)
+  const sctx = sprite.getContext('2d')
+  if (!sctx) return null
+  sctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  paintCarBody(sctx)
+  return sprite
+}
+
 type DynamicDuster2DProps = {
   step: RenaultStepId
   active: boolean
@@ -85,6 +255,7 @@ export function DynamicDuster2D({
     ]
     let skyOffset = 0
     let lampOffset = 0
+    const carSprite = bakeCarSprite()
 
     const render = (time: number) => {
       animId = requestAnimationFrame(render)
@@ -322,12 +493,6 @@ export function DynamicDuster2D({
       ctx.scale(carScale, carScale)
       ctx.rotate(floatPitch)
 
-      // Car local dimensions
-      const WHEEL_RADIUS = 34
-      const WHEEL_REAR_X = -135
-      const WHEEL_FRONT_X = 135
-      const WHEEL_Y = -WHEEL_RADIUS
-
       // --- 3A. HEADLIGHT VOLUMETRIC CONE ---
       ctx.save()
       const lightGrad = ctx.createRadialGradient(240, -56, 12, 490, -25, 270)
@@ -368,60 +533,9 @@ export function DynamicDuster2D({
       ctx.fillRect(-350, -62, 115, 14)
       ctx.restore()
 
-      // --- 3C. CAR BODYWORK (NEW RENAULT DUSTER 2D SIDE PROFILE) ---
-      // Underbody dark structural channel
-      ctx.fillStyle = '#0b0e14'
-      ctx.beginPath()
-      ctx.moveTo(-220, -22)
-      ctx.lineTo(220, -22)
-      ctx.lineTo(220, -10)
-      ctx.lineTo(-220, -10)
-      ctx.closePath()
-      ctx.fill()
-
-      // Main Duster Muscular Body Shell
-      ctx.beginPath()
-      // Rear bumper & tailgate
-      ctx.moveTo(-228, -20)
-      ctx.lineTo(-234, -48)
-      ctx.lineTo(-230, -78) // rear light corner
-      ctx.lineTo(-224, -92) // rear window base
-      ctx.lineTo(-172, -140) // C-pillar & roof spoiler
-      ctx.lineTo(-160, -143)
-      ctx.lineTo(40, -143) // Roofline with roof rack
-      ctx.lineTo(135, -94) // Windshield rake to A-pillar base
-      ctx.lineTo(175, -88) // Hood forward sweep
-      ctx.lineTo(228, -78) // Front headlight brow
-      ctx.lineTo(236, -60) // Front grille / bumper nose
-      ctx.lineTo(234, -36) // Lower front skid plate
-      ctx.lineTo(224, -20) // Front air dam
-
-      // Wheel arches cutouts
-      // Front arch
-      ctx.lineTo(WHEEL_FRONT_X + 46, -20)
-      ctx.arc(WHEEL_FRONT_X, WHEEL_Y, WHEEL_RADIUS + 12, 0, Math.PI, true)
-      ctx.lineTo(WHEEL_FRONT_X - 46, -20)
-
-      // Rocker panel
-      ctx.lineTo(WHEEL_REAR_X + 46, -20)
-
-      // Rear arch
-      ctx.arc(WHEEL_REAR_X, WHEEL_Y, WHEEL_RADIUS + 12, 0, Math.PI, true)
-      ctx.lineTo(WHEEL_REAR_X - 46, -20)
-      ctx.lineTo(-228, -20)
-      ctx.closePath()
-
-      // Metallic body paint gradient (Khaki / Titanium with gloss highlight)
-      const bodyGrad = ctx.createLinearGradient(0, -150, 0, -20)
-      bodyGrad.addColorStop(0, '#38423a') // Top roof highlight
-      bodyGrad.addColorStop(0.3, '#242b26') // Shoulder line
-      bodyGrad.addColorStop(0.7, '#191e1a') // Body mid
-      bodyGrad.addColorStop(1, '#0e1210') // Lower rocker
-      ctx.fillStyle = bodyGrad
-      ctx.fill()
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
-      ctx.lineWidth = 1.6
-      ctx.stroke()
+      if (carSprite) {
+        ctx.drawImage(carSprite, -BODY_PAD_X, -BODY_PAD_Y, BODY_W, BODY_H)
+      }
 
       // Moving paint glint sweeping across the roof/shoulder
       const glintX = -150 + ((time * 0.06) % 520) * 0.6
@@ -439,117 +553,6 @@ export function DynamicDuster2D({
         ctx.closePath()
         ctx.fill()
       }
-
-      // Body accent swage lines (Chiseled Duster creases)
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.55)'
-      ctx.lineWidth = 1.4
-      ctx.beginPath()
-      ctx.moveTo(-160, -82)
-      ctx.lineTo(155, -82) // shoulder crease
-      ctx.stroke()
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.moveTo(-150, -42)
-      ctx.lineTo(140, -42) // lower door crease
-      ctx.stroke()
-
-      // Front & Rear Satin Silver Skid Plates
-      ctx.fillStyle = '#6b7280'
-      ctx.beginPath()
-      ctx.roundRect(210, -32, 24, 12, 3)
-      ctx.fill()
-      ctx.beginPath()
-      ctx.roundRect(-230, -32, 22, 12, 3)
-      ctx.fill()
-
-      // Robust Wheel Arch Cladding (New Duster signature square cladding)
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
-      ctx.fillStyle = 'rgba(12, 15, 18, 0.9)'
-      ctx.lineWidth = 1.2
-      // Front cladding
-      ctx.beginPath()
-      ctx.arc(WHEEL_FRONT_X, WHEEL_Y, WHEEL_RADIUS + 12, 0, Math.PI, true)
-      ctx.arc(WHEEL_FRONT_X, WHEEL_Y, WHEEL_RADIUS + 16, Math.PI, 0, false)
-      ctx.closePath()
-      ctx.fill()
-      ctx.stroke()
-      // Rear cladding
-      ctx.beginPath()
-      ctx.arc(WHEEL_REAR_X, WHEEL_Y, WHEEL_RADIUS + 12, 0, Math.PI, true)
-      ctx.arc(WHEEL_REAR_X, WHEEL_Y, WHEEL_RADIUS + 16, Math.PI, 0, false)
-      ctx.closePath()
-      ctx.fill()
-      ctx.stroke()
-
-      // Modular Roof Rails (Duster signature)
-      ctx.fillStyle = '#f59e0b'
-      ctx.fillRect(-125, -149, 145, 4)
-      ctx.fillRect(-115, -146, 8, 4)
-      ctx.fillRect(10, -146, 8, 4)
-
-      // Greenhouse / Windows (Dark tinted with subtle cyan tint)
-      ctx.beginPath()
-      ctx.moveTo(-160, -92)
-      ctx.lineTo(-155, -137)
-      ctx.lineTo(34, -137)
-      ctx.lineTo(124, -92)
-      ctx.closePath()
-      const glassGrad = ctx.createLinearGradient(0, -140, 0, -90)
-      glassGrad.addColorStop(0, 'rgba(56, 211, 159, 0.32)')
-      glassGrad.addColorStop(0.4, 'rgba(16, 24, 32, 0.85)')
-      glassGrad.addColorStop(1, 'rgba(10, 14, 20, 0.96)')
-      ctx.fillStyle = glassGrad
-      ctx.fill()
-      ctx.strokeStyle = 'rgba(56, 211, 159, 0.45)'
-      ctx.lineWidth = 1.2
-      ctx.stroke()
-
-      // Window Pillars (B-pillar, C-pillar)
-      ctx.fillStyle = '#0a0d12'
-      ctx.fillRect(-35, -137, 10, 45) // B pillar
-      ctx.fillRect(-115, -137, 8, 45) // Quarter pillar
-
-      // Side mirror
-      ctx.fillStyle = '#1c221d'
-      ctx.strokeStyle = '#f59e0b'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.roundRect(108, -98, 22, 12, [3, 6, 6, 2])
-      ctx.fill()
-      ctx.stroke()
-
-      // Headlight LED cluster (New Duster signature Y-shape DRL)
-      ctx.fillStyle = '#fff'
-      ctx.shadowColor = '#38d39f'
-      ctx.shadowBlur = 12
-      ctx.fillRect(226, -72, 8, 10)
-      ctx.strokeStyle = '#38d39f'
-      ctx.lineWidth = 2.2
-      ctx.beginPath()
-      ctx.moveTo(222, -74)
-      ctx.lineTo(232, -68)
-      ctx.lineTo(222, -62)
-      ctx.stroke()
-      ctx.shadowBlur = 0
-
-      // Taillight LED (C/Y-shape)
-      ctx.shadowColor = '#ef4444'
-      ctx.shadowBlur = 10
-      ctx.strokeStyle = '#ef4444'
-      ctx.lineWidth = 2.6
-      ctx.beginPath()
-      ctx.moveTo(-228, -78)
-      ctx.lineTo(-234, -72)
-      ctx.lineTo(-228, -66)
-      ctx.stroke()
-      ctx.shadowBlur = 0
-
-      // Door handles
-      ctx.fillStyle = '#2d352e'
-      ctx.fillRect(45, -78, 16, 4) // Front door handle
-      ctx.fillRect(-85, -102, 10, 12) // Hidden C-pillar rear handle
 
       // --- 3D. HIGH-TECH STEP MODES ANIMATION (Overlaid on Car) ---
 

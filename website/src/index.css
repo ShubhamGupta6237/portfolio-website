@@ -53,6 +53,74 @@ body {
   min-height: 100vh;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
+  html.has-cursor,
+  html.has-cursor * {
+    cursor: none !important;
+  }
+}
+
+.cursor {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s var(--ease);
+}
+
+.cursor.on {
+  opacity: 1;
+}
+
+.cursor-ring,
+.cursor-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.cursor-ring {
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 50%;
+  border: 1px solid rgba(243, 242, 238, 0.55);
+  background: rgba(56, 211, 159, 0.04);
+  transition: width 0.28s var(--ease), height 0.28s var(--ease), margin 0.28s var(--ease),
+    border-color 0.28s var(--ease), background 0.28s var(--ease);
+}
+
+.cursor.hover .cursor-ring {
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-color: rgba(56, 211, 159, 0.85);
+  background: rgba(56, 211, 159, 0.1);
+}
+
+.cursor-dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: #f3f2ee;
+  box-shadow: 0 0 10px rgba(56, 211, 159, 0.45);
+  transition: background 0.22s var(--ease);
+}
+
+.cursor.hover .cursor-dot {
+  background: #38d39f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor {
+    display: none;
+  }
+}
+
 :focus-visible {
   outline: 2px solid var(--signal);
   outline-offset: 3px;

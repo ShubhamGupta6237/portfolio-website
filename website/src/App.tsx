@@ -1,6 +1,7 @@
 import { MotionConfig } from 'framer-motion'
 import { useEffect } from 'react'
 import { Contact } from './components/Contact'
+import { Cursor } from './components/Cursor'
 import { Hero } from './components/Hero'
 import { Nav } from './components/Nav'
 import { Overview } from './components/Overview'
@@ -18,6 +19,7 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
+      <Cursor />
       <Nav />
       <main>
         <Hero />
