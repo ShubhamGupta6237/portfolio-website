@@ -1,0 +1,166 @@
+%-------------------------------------------------------------------------------
+% Shubham Gupta - Resume
+% ATS-friendly: single column, standard section names, selectable/searchable
+% text (glyphtounicode), no icons, no images, no multi-column layout.
+% Build: pdflatex resume.tex   (or: tectonic resume.tex)
+%-------------------------------------------------------------------------------
+
+\documentclass[letterpaper,10pt]{article}
+
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \input{glyphtounicode}
+  \pdfgentounicode=1
+\fi
+\usepackage{lmodern}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{tabularx}
+\usepackage{xcolor}
+
+\hypersetup{
+  pdftitle={Shubham Gupta - Resume},
+  pdfauthor={Shubham Gupta},
+  pdfsubject={Founding Engineer - Real-Time Voice AI - C++20 Systems},
+  pdfkeywords={C++20, Real-Time Systems, Voice AI, LiveKit, WebRTC, SIP, LLM, STT, TTS, Kubernetes, Android}
+}
+
+\pagestyle{empty}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+\addtolength{\oddsidemargin}{-0.55in}
+\addtolength{\evensidemargin}{-0.55in}
+\addtolength{\textwidth}{1.1in}
+\addtolength{\topmargin}{-0.6in}
+\addtolength{\textheight}{1.2in}
+
+\titleformat{\section}
+  {\vspace{-6pt}\scshape\raggedright\large\bfseries}
+  {}{0em}{}[\color{black}\titlerule\vspace{-5pt}]
+\titlespacing*{\section}{0pt}{8pt}{9pt}
+
+\setlist[itemize]{leftmargin=0.18in, itemsep=1.5pt, parsep=0pt, topsep=2pt, label=\textbullet}
+
+% \resumeEntry{Company}{Location}{Title}{Dates}
+\newcommand{\resumeEntry}[4]{
+  \vspace{2pt}
+  \begin{tabularx}{\textwidth}{@{}X r@{}}
+    \textbf{#1} & #2 \\
+    \textit{#3} & \textit{#4} \\
+  \end{tabularx}
+  \vspace{-6pt}
+}
+
+\begin{document}
+
+%----------------------------------- HEADER -----------------------------------
+\begin{center}
+  {\Huge \scshape Shubham Gupta} \\ \vspace{2pt}
+  {\normalsize Founding Engineer \ $|$ \ Real-Time Voice AI \ $|$ \ C++20 Systems \ $|$ \ AI-Native Builder} \\ \vspace{2pt}
+  \small
+  Meerut, Uttar Pradesh \ $|$ \
+  +91-9368529122 \ $|$ \
+  \href{mailto:shubhamgupta.6237@gmail.com}{shubhamgupta.6237@gmail.com} \ $|$ \
+  \href{https://www.linkedin.com/in/shubham-gupta-251141210/}{linkedin.com/in/shubham-gupta-251141210}
+\end{center}
+
+%----------------------------------- SUMMARY ----------------------------------
+\section{Summary}
+\small
+I build AI that talks back in real time. As founding engineer at Vaani AI Research, I built the C++20
+engine behind its phone and web voice agents from scratch: sub-200\,ms voice-to-voice, 21 AI vendors
+with live failover, built AI-native. Previously shipped connected-vehicle software for the New Renault Duster.
+
+%---------------------------------- EXPERIENCE --------------------------------
+\section{Experience}
+
+\resumeEntry{Vaani AI Research}{Bengaluru, India}
+  {Founding Engineer -- Senior Software Engineer}{May 2026 -- Present}
+\begin{itemize}
+  \item \textbf{Built the voice AI engine from zero:} a production C++20 orchestrator running live
+        conversations over SIP telephony, WebRTC, and chat on LiveKit, streaming STT $\rightarrow$
+        turn detection $\rightarrow$ LLM $\rightarrow$ TTS in a sub-200\,ms voice-to-voice budget.
+  \item \textbf{Made live calls outage-proof:} router-based failover with PCM replay across 21 AI vendors
+        (7 STT, 6 LLM, 8 TTS, incl. Deepgram, Sarvam, OpenAI, Gemini, Groq, self-hosted Gemma on vLLM,
+        Cartesia, ElevenLabs), so no outage drops a call.
+  \item \textbf{Made the agent feel human:} speculative LLM execution starts replying before the caller
+        finishes, and generation-ID barge-in instantly kills stale tokens and audio the moment the
+        caller interrupts.
+  \item \textbf{Taught it when to speak:} multimodal end-of-turn detection fusing a text EOU classifier
+        with the Smart-Turn audio model on ONNX Runtime / OpenVINO, plus VAD and neural noise
+        suppression across 8/16/48\,kHz audio.
+  \item \textbf{Zero locks, zero allocations on the audio hot path:} lock-free ring buffers, strand-safe
+        timers, and Boost.Asio, proven with RapidCheck property tests under ASan, UBSan, and TSan.
+  \item \textbf{Built to extend, not edit:} ABI-stable stage contract, \texttt{dlopen} plugin host, and
+        CI-enforced dependency lint; call recording, persona memory, and 12 session watchers shipped
+        with zero core-engine changes.
+  \item \textbf{15+ in-call tools via LLM function calling:} SIP warm/cold transfer, Cal.com booking,
+        WhatsApp, RAG over pgvector, custom APIs, and voicemail detection.
+  \item \textbf{Smarter conversations:} token-budgeted context with rolling summarization, persona memory
+        from past calls and CRM, multilingual / Indic language switching, and guardrails.
+  \item \textbf{Production-grade at scale:} actor-model agent server with Redis-backed concurrency and
+        pooled connections on Kubernetes (HPA, zero-downtime deploys, 300\,s graceful drain), with
+        OpenTelemetry, Prometheus, and AWS / Azure secret managers.
+  \item \textbf{AI-native engineering:} authored agent rules, \texttt{AGENTS.md}, Cursor skills (incl. a
+        4-phase architecture audit), and a 30K-node codebase knowledge graph that let coding agents
+        ship production C++ safely.
+\end{itemize}
+
+\resumeEntry{Renault Group}{Bengaluru, India}
+  {Engineer}{Jul 2025 -- Apr 2026}
+\begin{itemize}
+  \item \textbf{New Renault Duster:} built Android and embedded software for its connected-vehicle and
+        in-vehicle apps (Kotlin, Java, Jetpack MVVM), owning two core components:
+        \begin{itemize}[label=$\circ$, topsep=1pt]
+          \item \textbf{DiagRef Handler:} vehicle diagnostics reference handling over microservices and REST APIs.
+          \item \textbf{Config Hub Bridge:} vehicle configuration sync between in-vehicle apps and backend
+                services, with SQLite / Room persistence.
+        \end{itemize}
+  \item \textbf{ADAS features:} developed driver-assistance features; prototyped Rust and OpenCV image
+        processing for safety R\&D.
+  \item \textbf{Performance and team:} tuned for low latency with unit tests, code reviews, and CI/CD in
+        Agile sprints; mentored new trainees.
+\end{itemize}
+
+\resumeEntry{Renault Group}{Bengaluru, India}
+  {Graduate Engineering Trainee}{Jul 2024 -- Jun 2025}
+\begin{itemize}
+  \item Developed Android applications (Java, Kotlin, Android SDK) for connected-vehicle systems with
+        SQLite and REST APIs.
+  \item Improved reliability through debugging, unit testing, and bug fixes; worked with embedded Linux
+        and automotive frameworks.
+\end{itemize}
+
+%----------------------------------- SKILLS -----------------------------------
+\section{Technical Skills}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{1.45in} X@{}}
+  \textbf{Languages:}       & C++ (C++17/20), Kotlin, Java, Python, Rust, SQL, Bash \\
+  \textbf{Systems:}         & Real-Time Audio, Multithreading, Lock-Free Data Structures, Boost.Asio,
+                              Actor Model, Plugin/ABI Design, CMake, vcpkg \\
+  \textbf{Voice \& AI:}     & LiveKit, WebRTC, SIP, STT, TTS, LLM Orchestration, Function Calling, RAG,
+                              pgvector, ONNX Runtime, OpenVINO, VAD, vLLM \\
+  \textbf{Cloud \& DevOps:} & Docker, Kubernetes, AWS, Azure, Redis, PostgreSQL, GitLab CI/CD,
+                              OpenTelemetry, Prometheus \\
+  \textbf{Mobile \& Embedded:} & Android SDK, Android Studio, Android Jetpack, MVVM, Room, SQLite, Gradle,
+                              Embedded Linux, OpenCV \\
+  \textbf{Testing:}         & CTest, RapidCheck (Property-Based Testing), ASan, UBSan, TSan,
+                              clang-tidy, Unit Testing \\
+  \textbf{AI Tooling:}      & Cursor, Claude, Agentic Coding, Prompt Engineering, Agent Rules \& Skills,
+                              Codebase Knowledge Graphs \\
+  \textbf{Domains:}         & Conversational Voice AI, Telephony, Connected Vehicles, ADAS, Vehicle Diagnostics,
+                              Agile / SDLC \\
+\end{tabularx}
+
+%---------------------------------- EDUCATION ---------------------------------
+\section{Education}
+\resumeEntry{Chandigarh University}{Punjab, India}
+  {Bachelor of Engineering in Computer Science}{2020 -- 2024}
+
+\end{document}
