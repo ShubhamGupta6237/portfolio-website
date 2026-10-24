@@ -18,10 +18,10 @@ function PanelShell({ title, badge, children }: { title: string; badge?: string;
 /* 01 — overlapping streams */
 const streams = [
   { label: 'mic audio', start: 0, w: 62, color: 'rgba(255,255,255,0.35)' },
-  { label: 'stt interim', start: 4, w: 56, color: '#5ef2ff' },
-  { label: 'turn detect', start: 24, w: 10, color: '#ffb020' },
-  { label: 'llm tokens', start: 28, w: 42, color: '#8b5cf6' },
-  { label: 'tts audio', start: 32, w: 46, color: '#f472b6' },
+  { label: 'stt interim', start: 4, w: 56, color: '#c8f04d' },
+  { label: 'turn detect', start: 24, w: 10, color: '#e6b84d' },
+  { label: 'llm tokens', start: 28, w: 42, color: '#d4c4a0' },
+  { label: 'tts audio', start: 32, w: 46, color: '#efece6' },
   { label: 'playback', start: 36, w: 52, color: '#4ade80' },
 ]
 

@@ -1,14 +1,14 @@
 export const profile = {
   name: 'Shubham Gupta',
   roles: ['Founding Engineer', 'Real-Time Voice AI', 'C++20 Systems', 'AI-Native Builder'],
-  tagline: 'I build AI that talks back in real time.',
+  tagline: 'Real-time voice systems. Sub-200 ms. C++20.',
   location: 'Meerut, Uttar Pradesh',
   email: 'shubhamgupta.6237@gmail.com',
   phone: '+91-9368529122',
   linkedin: 'https://www.linkedin.com/in/shubham-gupta-251141210/',
   resume: '/Shubham_Gupta_Resume.pdf',
   about:
-    'Founding engineer at Vaani AI Research, where I built the C++20 engine behind its phone and web voice agents from scratch. Before that I shipped connected-vehicle software for the New Renault Duster. I care about latency budgets, clean architecture, and using AI agents to ship production code faster.',
+    'Founding engineer at Vaani AI Research, where I built the C++20 engine behind its phone and web voice agents from scratch. Before that I shipped connected-vehicle software for next-generation automotive platforms. I care about latency budgets, clean architecture, and using AI agents to ship production code faster.',
 }
 
 export const stats = [
@@ -21,7 +21,7 @@ export const stats = [
 export const timeline = [
   { year: '2020 – 2024', title: 'B.E. Computer Science', org: 'Chandigarh University' },
   { year: 'Jul 2024', title: 'Graduate Engineering Trainee', org: 'Renault Group' },
-  { year: 'Jul 2025', title: 'Engineer, New Duster', org: 'Renault Group' },
+  { year: 'Jul 2025', title: 'Software Engineer', org: 'Renault Group' },
   { year: 'May 2026', title: 'Founding Engineer, SSE', org: 'Vaani AI Research' },
 ]
 
@@ -99,23 +99,23 @@ export type RenaultStepId = 'duster' | 'diag' | 'config' | 'adas' | 'android'
 export const renaultSteps: { id: RenaultStepId; kicker: string; title: string; body: string; tags: string[] }[] = [
   {
     id: 'duster',
-    kicker: '01 · The program',
-    title: 'New Renault Duster',
-    body: 'Built Android and embedded software for the connected-vehicle and in-vehicle apps of the New Duster, using Kotlin, Java, and Jetpack (MVVM).',
+    kicker: '01 · The platform',
+    title: 'Renault Group Architecture',
+    body: 'Built Android and embedded software for connected-vehicle systems and digital cockpit applications using Kotlin, Java, and Jetpack (MVVM).',
     tags: ['Kotlin', 'Java', 'Jetpack', 'MVVM'],
   },
   {
     id: 'diag',
     kicker: '02 · Diagnostics',
-    title: 'DiagRef Handler',
-    body: 'Owned the Duster\u2019s diagnostics reference handling, wiring vehicle diagnostics through microservices and REST APIs.',
+    title: 'Diagnostics Gateway',
+    body: 'Owned vehicle diagnostics reference handling and telemetry ingestion, interfacing embedded ECUs via UDS/CAN microservices and REST gateways.',
     tags: ['Diagnostics', 'Microservices', 'REST'],
   },
   {
     id: 'config',
     kicker: '03 · Configuration',
-    title: 'Config Hub Bridge',
-    body: 'Built the bridge that keeps vehicle configuration in sync between in-vehicle apps and backend services, with SQLite / Room persistence.',
+    title: 'Cloud Config Hub',
+    body: 'Built the bridge that keeps vehicle configuration in sync between in-vehicle settings, local Room/SQLite persistence, and cloud configuration services.',
     tags: ['Sync', 'SQLite', 'Room'],
   },
   {

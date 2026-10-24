@@ -14,7 +14,7 @@ const NODE_W = 78
 const GAP = (W - 20 - NODE_W * nodes.length) / (nodes.length - 1)
 const x = (i: number) => 10 + i * (NODE_W + GAP)
 const PATH = `M ${x(0) + NODE_W / 2} 30 L ${x(nodes.length - 1) + NODE_W / 2} 30`
-const packetColors = ['#5ef2ff', '#5ef2ff', '#8b5cf6', '#f472b6', '#4ade80']
+const packetColors = ['#c8f04d', '#c8f04d', '#e6b84d', '#efece6', '#8fd67a']
 
 export function Pipeline({ node }: { node: PipeNode }) {
   return (

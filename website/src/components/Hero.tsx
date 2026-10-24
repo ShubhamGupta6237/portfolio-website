@@ -1,111 +1,94 @@
 import { motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useLayoutEffect, useRef } from 'react'
 import { profile } from '../data/profile'
-import { scrollToId } from '../lib/scroll'
-import { Magnetic } from './Magnetic'
-import { WaveField } from './WaveField'
+import { useOnScreen } from '../hooks/useOnScreen'
+import { easeOut } from '../lib/motion'
+import { gsap, prefersReducedMotion, scrollToId } from '../lib/scroll'
 
-function useTypedRoles(roles: string[]) {
-  const [text, setText] = useState('')
-  useEffect(() => {
-    let role = 0
-    let i = 0
-    let deleting = false
-    let id = 0
-    const step = () => {
-      const full = roles[role]
-      if (!deleting) {
-        i++
-        setText(full.slice(0, i))
-        if (i === full.length) {
-          deleting = true
-          id = window.setTimeout(step, 1600)
-          return
-        }
-      } else {
-        i--
-        setText(full.slice(0, i))
-        if (i === 0) {
-          deleting = false
-          role = (role + 1) % roles.length
-        }
-      }
-      id = window.setTimeout(step, deleting ? 35 : 70)
-    }
-    id = window.setTimeout(step, 900)
-    return () => window.clearTimeout(id)
-  }, [roles])
-  return text
-}
+const AudioWaveHorizon = lazy(() => import('./hero/AudioWaveHorizon').then((m) => ({ default: m.AudioWaveHorizon })))
+
+const rise = (delay: number) => ({
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.9, delay, ease: easeOut },
+})
+
+const line = (delay: number) => ({
+  initial: { y: '108%' },
+  animate: { y: '0%' },
+  transition: { duration: 1.1, delay, ease: easeOut },
+})
 
 export function Hero() {
-  const typed = useTypedRoles(profile.roles)
-  const words = profile.name.split(' ')
+  const ref = useRef<HTMLElement>(null)
+  const inner = useRef<HTMLDivElement>(null)
+  const visible = useOnScreen(ref)
+  const reduced = prefersReducedMotion()
+
+  // Content drifts up and softens as you scroll past, so the hand-off to the next section isn't a hard cut.
+  useLayoutEffect(() => {
+    if (reduced || !ref.current || !inner.current) return
+    const tween = gsap.to(inner.current, {
+      yPercent: -9,
+      opacity: 0.1,
+      ease: 'none',
+      scrollTrigger: { trigger: ref.current, start: 'top top', end: 'bottom top', scrub: true },
+    })
+    return () => {
+      tween.scrollTrigger?.kill()
+      tween.kill()
+    }
+  }, [reduced])
 
   return (
-    <header className="hero" id="top">
-      <WaveField />
-      <div className="container hero-inner">
-        <motion.div
-          className="hero-status"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
+    <header className="hero" id="top" ref={ref}>
+      <motion.div
+        className="hero-field"
+        aria-hidden
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.8, delay: 0.3, ease: easeOut }}
+      >
+        {!reduced && (
+          <Suspense fallback={null}>
+            <AudioWaveHorizon active={visible} />
+          </Suspense>
+        )}
+        <div className="hero-fade" />
+      </motion.div>
+      <div className="container hero-inner" ref={inner}>
+        <motion.p className="hero-meta" {...rise(0.1)}>
           <span className="live" />
-          Founding Engineer @ Vaani AI Research
-        </motion.div>
-
-        <h1 className="hero-name" aria-label={profile.name}>
-          {words.map((word, wi) => (
-            <span className="word" key={word}>
-              {word.split('').map((ch, ci) => (
-                <motion.span
-                  key={ci}
-                  className="char"
-                  initial={{ y: '110%' }}
-                  animate={{ y: 0 }}
-                  transition={{ delay: 0.3 + wi * 0.25 + ci * 0.04, duration: 0.9, ease: [0.2, 0.8, 0.1, 1] }}
-                >
-                  {ch}
-                </motion.span>
-              ))}
-            </span>
-          ))}
-        </h1>
-
-        <motion.div className="hero-role" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1 }}>
-          <span className="typed">{typed}</span>
-          <span className="caret" />
-        </motion.div>
-
-        <motion.p
-          className="hero-tagline"
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.3, duration: 0.8 }}
-        >
-          {profile.tagline} Sub-200 ms voice agents in C++20, and before that, software for the New Renault Duster.
+          Founding engineer · Vaani AI · Bengaluru
         </motion.p>
-
-        <motion.div
-          className="hero-cta"
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.5, duration: 0.8 }}
-        >
-          <Magnetic className="btn primary" onClick={() => scrollToId('vaani')}>
-            See the work ↓
-          </Magnetic>
-          <Magnetic href={profile.resume} download>
-            Résumé PDF
-          </Magnetic>
+        <h1 className="hero-name">
+          <span className="line">
+            <motion.span {...line(0.18)}>Shubham</motion.span>
+          </span>
+          <span className="line">
+            <motion.span className="name-accent" {...line(0.3)}>Gupta</motion.span>
+          </span>
+        </h1>
+        <motion.p className="hero-role" {...rise(0.55)}>
+          {profile.tagline}
+        </motion.p>
+        <motion.p className="hero-tagline" {...rise(0.68)}>
+          I designed the C++20 engine behind live phone and web voice agents. Before that, two years of connected-vehicle
+          software at Renault Group.
+        </motion.p>
+        <motion.div className="hero-cta" {...rise(0.82)}>
+          <button className="btn primary" onClick={() => scrollToId('vaani')}>
+            The work
+          </button>
+          <a className="btn" href={profile.resume} download>
+            Résumé
+          </a>
         </motion.div>
       </div>
-      <div className="scroll-cue">
-        <span className="line" />
-        SCROLL
-      </div>
+      <motion.div className="hero-scroll" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.6, duration: 1 }}>
+        <span>Scroll</span>
+        <i />
+      </motion.div>
     </header>
   )
 }
