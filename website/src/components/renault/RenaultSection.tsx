@@ -41,7 +41,7 @@ export function RenaultSection() {
                 </Suspense>
               </div>
             </div>
-            <StoryText steps={renaultSteps} step={step} />
+            <StoryText steps={renaultSteps} step={step} showNav={false} />
           </div>
         </div>
       </div>

@@ -1,14 +1,25 @@
 import { useLayoutEffect, useState, type RefObject } from 'react'
 import { ScrollTrigger } from '../lib/scroll'
 
-/** Maps scroll progress through a tall container onto a discrete step index. */
+/** Maps scroll progress through a tall container onto a discrete step index on desktop,
+ * and allows direct touch/step navigation on mobile. */
 export function useScrollSteps(ref: RefObject<HTMLElement | null>, count: number) {
   const [step, setStep] = useState(0)
-  const [inView, setInView] = useState(false)
+  const [inView, setInView] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 960 : false))
 
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
+
+    // On mobile viewports (<= 960px), let content flow naturally with interactive step deck
+    if (window.innerWidth <= 960) {
+      const onResize = () => {
+        if (window.innerWidth > 960) ScrollTrigger.refresh()
+      }
+      window.addEventListener('resize', onResize)
+      return () => window.removeEventListener('resize', onResize)
+    }
+
     const trigger = ScrollTrigger.create({
       trigger: el,
       start: 'top top',
@@ -22,5 +33,5 @@ export function useScrollSteps(ref: RefObject<HTMLElement | null>, count: number
     return () => trigger.kill()
   }, [ref, count])
 
-  return { step, inView }
+  return { step, setStep, inView }
 }
