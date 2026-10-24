@@ -1,59 +1,53 @@
-import { motion } from 'framer-motion'
 import { profile } from '../data/profile'
-import { Magnetic } from './Magnetic'
+import { scrollToTop } from '../lib/scroll'
+import { Reveal } from './Reveal'
+
+const currentYear = new Date().getFullYear()
 
 export function Contact() {
   return (
     <section className="contact" id="contact">
       <div className="container">
-        <div className="kicker">// contact</div>
-        <motion.h2
-          className="contact-title"
-          style={{ marginTop: 18 }}
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1, ease: [0.2, 0.7, 0.1, 1] }}
-        >
-          Let&apos;s build something
-          <br />
-          that <span className="grad-vaani">talks back.</span>
-        </motion.h2>
+        <Reveal>
+          <div className="kicker">Contact</div>
+          <h2 className="contact-title">
+            <a href={`mailto:${profile.email}`}>{profile.email}</a>
+          </h2>
+        </Reveal>
 
-        <div className="contact-links">
-          <Magnetic className="btn primary" href={`mailto:${profile.email}`}>
-            {profile.email}
-          </Magnetic>
-          <Magnetic href={profile.linkedin} external>
-            LinkedIn ↗
-          </Magnetic>
-          <Magnetic href={`tel:${profile.phone.replace(/[^+\d]/g, '')}`}>{profile.phone}</Magnetic>
-          <Magnetic href={profile.resume} download>
-            Résumé PDF ↓
-          </Magnetic>
-        </div>
+        <Reveal delay={0.1}>
+          <div className="contact-links">
+            <a className="btn" href={profile.linkedin} target="_blank" rel="noreferrer">
+              LinkedIn
+            </a>
+            <a className="btn" href={`tel:${profile.phone.replace(/[^+\d]/g, '')}`}>
+              {profile.phone}
+            </a>
+            <a className="btn" href={profile.resume} download>
+              Résumé
+            </a>
+          </div>
+        </Reveal>
 
-        <motion.div
-          className="card edu"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
-          <div>
-            <div className="kicker">education</div>
-            <h4 style={{ marginTop: 8 }}>Chandigarh University</h4>
-            <div style={{ color: 'var(--muted)', marginTop: 4 }}>Bachelor of Engineering, Computer Science</div>
+        <Reveal delay={0.1}>
+          <div className="card edu">
+            <div>
+              <div className="kicker">Education</div>
+              <h4 style={{ marginTop: 8 }}>Chandigarh University</h4>
+              <div style={{ color: 'var(--muted)', marginTop: 4 }}>Bachelor of Engineering, Computer Science</div>
+            </div>
+            <div className="mono" style={{ color: 'var(--muted)' }}>
+              2020 – 2024
+            </div>
           </div>
-          <div className="mono" style={{ color: 'var(--muted)' }}>
-            2020 – 2024
-          </div>
-        </motion.div>
+        </Reveal>
 
         <footer className="footer">
-          <span>© {new Date().getFullYear()} Shubham Gupta</span>
+          <span>© {currentYear} Shubham Gupta</span>
           <span>{profile.location}</span>
-          <span>Built with React, GSAP, Three.js</span>
+          <button className="to-top" onClick={scrollToTop}>
+            Back to top ↑
+          </button>
         </footer>
       </div>
     </section>
